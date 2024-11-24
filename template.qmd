@@ -10,15 +10,12 @@ format:
     docx: default
 ---
 
-We begin by loading the required packages.
 
 ```{julia}
 using Revise                      # <1>
 using RainwaterHarvesting         # <2>
 ```
 
-1. `Revise` allows us to update code without restarting Julia.
-2. We load the `RainwaterHarvesting` package that contains our simulation tools.
 
 ### Setting the file path
 
@@ -28,18 +25,12 @@ rainfall_data = RainfallData(filepath) # <2>
 rainfall_data.annual_data
 ```
 
-1. This is the path to the rainfall data file for the station of interest.
-2. This creates a `RainfallData` object containing the rainfall data for the specified station.
-
 
 ### Plotting the Data
 
 ```{julia}
 plot(rainfall_data) # <1>
 ```
-
-1. This `plot` function is defined in [viz.jl](./RainwaterHarvesting/src/viz.jl) and is a thin wrapper around the Plots.jl package.
-
 
 ### Discussion 
 The years kept after data cleaning are 1985, 2004, 2002, 2001, 2013, 2015, 1991, 1976, 1988, and 2008. I believe that the available data is sufficient for meaningful risk assessments because the years span over a nearly 40-year period. 
@@ -48,8 +39,6 @@ The years kept after data cleaning are 1985, 2004, 2002, 2001, 2013, 2015, 1991,
 The years that Ceara, Brazil had major droughts are 1998, 2002, 2012-2018. My data includes only some of these years  (2002, 2013, 2015.) Missing data during drought years can yield an inaccurate assessment, often an underestimation, of the impact of droughts on communities. This can lead to potential water shortages because water allocation strategies are based only on non-drought years. 
 
 ## Understanding the Theoretical Model
-
-Let's explore the model that simulates the rainwater harvesting system.
 
 ### Discussion
 The major limiting assumption in the model is that all households will consume the same amount, beginning in the 150th day of the year. So I would create a household coefficient that would be the coefficient for consumption, which would be equivalent to the number of household members. This would however, also assume that one person consumes the same amount. Unfortunately, there is no way to quantify that. 
@@ -72,28 +61,16 @@ param = ModelParameters(          # <1>
 )
 ```
 
-1. This creates a `ModelParameters` object with the specified parameters.
-2. The runoff coefficient ($\eta$) is a measure of how much of the rain that falls on the roof ends up in the tank.
-3. The roof area ($A$) is the area of the roof that the rain falls on.
-4. The first flush volume ($V_f$) is the volume of rain that is discarded because it is dirty.
-5. The tank capacity ($V_\text{max}$) is the maximum volume of the tank.
-
 ### Discussion
 I decided to change roof area and first flush. Because many communities in Brazil will be lower-income, the roof areas will be smaller as houses will be smaller. I also increased first flush because it is more likely that the water will be dirtier, which means more water will need to be discarded. This will decrease the flow in of the mass balance equation, leading to the tank emptying much faster. 
 
 ### Running the Simulation for One Year
-
-Let's run the model for the year 1981.
 
 ```{julia}
 rainfall_1981 = rainfall_data.annual_data[1981]    # <1>
 results_1981 = run_timesteps(rainfall_1981, param) # <2>
 p1 = plot(results_1981)                                 # <3>
 ```
-
-1. We select the annual rainfall data for the year 1981.
-2. We run the simulation for the year 1981.
-3. We plot the results, again using a `plot` function defined in [viz.jl](./RainwaterHarvesting/src/viz.jl).
 
 To compare rainfall and tank volume:
 
@@ -102,10 +79,7 @@ p2 = plot(rainfall_1981)
 plot(p2, p1, layout=(2, 1), size=(1000, 700), link=:x)
 ```
 
-
 ### Reliability Analysis
-
-We can run simulations for all years, one at a time, and then check how many times the tank runs dry.
 
 ```{julia}
 all_years = sort(collect(keys(rainfall_data.annual_data)))          # <1>
@@ -113,11 +87,6 @@ all_results = [run_timesteps(rainfall_data.annual_data[year], param) for year in
 any_failures = [!isempty(result.failure_dates) for result in all_results]  # <3>
 println("Number of years with failures: ", sum(any_failures), " out of ", length(all_years))  # <4>
 ```
-
-1. We get all the years in order.
-2. We run the simulation for each year.
-3. We check if any failures occurred.
-4. We print the number of years with failures and the total number of years.
 
 ### Discussion
 The system failed for 10 years. This means the system has a reliability percentage of 80%. This shows that increasing the first flush and decreasing the roof area has a negative impact on the functionality of the system. Because it is unlikely that most people in Brazil will have enough money to increase their roof areas, it is necessary to implement standards of cleanliness in neighborhoods in order to keep the first flush under control. 
